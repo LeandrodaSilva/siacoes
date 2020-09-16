@@ -8,13 +8,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class BaseDAO<T> {
+    private final Connection conn;
+
+    public BaseDAO() throws SQLException {
+        this.conn = ConnectionDAO.getInstance().getConnection();
+    }
+
     public T findById(int id) throws SQLException {
         String query = this.findByIdQuery();
 
         try(
-                Connection conn = ConnectionDAO.getInstance().getConnection();
-                PreparedStatement stmt = conn.prepareStatement(query);
-                ResultSet rs = stmt.executeQuery()
+            PreparedStatement stmt = this.conn.prepareStatement(query);
+            ResultSet rs = stmt.executeQuery()
         ) {
             stmt.setInt(1, id);
 
@@ -28,9 +33,8 @@ public abstract class BaseDAO<T> {
 
     protected List<T> list(String query) throws SQLException {
         try(
-                Connection conn = ConnectionDAO.getInstance().getConnection();
-                Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(query)
+            Statement stmt = this.conn.createStatement();
+            ResultSet rs = stmt.executeQuery(query)
         ) {
             List<T> list = new ArrayList<T>();
 
@@ -46,8 +50,7 @@ public abstract class BaseDAO<T> {
         String query = this.insertQuery();
 
         try (
-                Connection conn = ConnectionDAO.getInstance().getConnection();
-                PreparedStatement stmt = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)
+            PreparedStatement stmt = this.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)
         ) {
             PreparedStatement newStmt = this.insertStatementStep(stmt, object);
             newStmt.execute();
@@ -58,25 +61,54 @@ public abstract class BaseDAO<T> {
         }
     }
 
+    private int insert(T object) throws SQLException {
+        String query = this.insertQuery();
+
+        try (
+            PreparedStatement stmt = this.conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)
+        ) {
+            PreparedStatement newStmt = this.insertStatementStep(stmt, object);
+            newStmt.execute();
+
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
+                return this.insertResultSetStep(conn, rs, object);
+            }
+        }
+    }
+
     public int save(int idUser, T object) throws SQLException {
         return this.getId(object) == 0
                 ? this.insert(idUser, object)
                 : this.update(idUser, object);
     }
 
+    public int save(T object) throws SQLException {
+        return this.getId(object) == 0
+                ? this.insert(object)
+                : this.update(object);
+    }
+
     private int update(int idUser, T object) throws SQLException {
         String query = this.updateQuery();
 
         try (
-                Connection conn = ConnectionDAO.getInstance().getConnection();
-                PreparedStatement stmt = conn.prepareStatement(query)
+            PreparedStatement stmt = this.conn.prepareStatement(query)
         ) {
             PreparedStatement newStmt = this.updateStatementStep(stmt, object);
-
             newStmt.execute();
-
             new UpdateEvent(conn).registerUpdate(idUser, object);
+            return this.getId(object);
+        }
+    }
 
+    private int update(T object) throws SQLException {
+        String query = this.updateQuery();
+
+        try (
+            PreparedStatement stmt = this.conn.prepareStatement(query)
+        ) {
+            PreparedStatement newStmt = this.updateStatementStep(stmt, object);
+            newStmt.execute();
             return this.getId(object);
         }
     }
@@ -92,6 +124,8 @@ public abstract class BaseDAO<T> {
     protected abstract PreparedStatement insertStatementStep(PreparedStatement stmt, T object) throws SQLException;
 
     protected abstract int insertResultSetStep(int idUser, Connection conn, ResultSet rs, T object) throws SQLException;
+
+    protected abstract int insertResultSetStep(Connection conn, ResultSet rs, T object) throws SQLException;
 
     protected abstract PreparedStatement updateStatementStep(PreparedStatement stmt, T object) throws SQLException;
 
