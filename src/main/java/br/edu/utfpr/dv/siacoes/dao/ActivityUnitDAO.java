@@ -11,7 +11,10 @@ import br.edu.utfpr.dv.siacoes.log.UpdateEvent;
 import br.edu.utfpr.dv.siacoes.model.ActivityUnit;
 
 public class ActivityUnitDAO extends BaseDAO<ActivityUnit> {
-	
+
+	public ActivityUnitDAO() throws SQLException {
+	}
+
 	public List<ActivityUnit> listAll() throws SQLException{
 		return this.list("SELECT * " +
 				"FROM activityunit " +
@@ -27,6 +30,11 @@ public class ActivityUnitDAO extends BaseDAO<ActivityUnit> {
 		new UpdateEvent(conn).registerInsert(idUser, object);
 
 		return object.getIdActivityUnit();
+	}
+
+	@Override
+	protected int insertResultSetStep(Connection conn, ResultSet rs, ActivityUnit object) throws SQLException {
+		return 0;
 	}
 
 	@Override

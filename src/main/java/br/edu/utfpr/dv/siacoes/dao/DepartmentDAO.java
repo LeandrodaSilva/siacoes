@@ -12,6 +12,9 @@ import br.edu.utfpr.dv.siacoes.log.UpdateEvent;
 import br.edu.utfpr.dv.siacoes.model.Department;
 
 public class DepartmentDAO extends BaseDAO<Department> {
+	public DepartmentDAO() throws SQLException {
+	}
+
 	@Override
 	protected String findByIdQuery() {
 		return "SELECT department.*, campus.name AS campusName " +
@@ -85,6 +88,11 @@ public class DepartmentDAO extends BaseDAO<Department> {
 		new UpdateEvent(conn).registerInsert(idUser, object);
 
 		return object.getIdDepartment();
+	}
+
+	@Override
+	protected int insertResultSetStep(Connection conn, ResultSet rs, Department object) throws SQLException {
+		return 0;
 	}
 
 	protected Department loadObject(ResultSet rs) throws SQLException{

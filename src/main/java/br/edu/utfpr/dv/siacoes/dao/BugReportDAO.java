@@ -14,12 +14,19 @@ import br.edu.utfpr.dv.siacoes.model.Module;
 import br.edu.utfpr.dv.siacoes.model.User;
 
 public class BugReportDAO extends BaseDAO<BugReport> {
+	public BugReportDAO() throws SQLException {
+	}
+
 	@Override
 	protected int insertResultSetStep(int idUser, Connection conn, ResultSet rs, BugReport object) throws SQLException {
+		return 0;
+	}
+
+	@Override
+	protected int insertResultSetStep(Connection conn, ResultSet rs, BugReport object) throws SQLException {
 		if(rs.next()){
 			object.setIdBugReport(rs.getInt(1));
 		}
-
 		return object.getIdBugReport();
 	}
 
